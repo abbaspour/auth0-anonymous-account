@@ -1,0 +1,8 @@
+name = "anon-router"
+main = "src/index.mjs"
+compatibility_date = "2024-08-12"
+
+[vars]
+AUTH0_EDGE_LOCATION = "xxxx.auth0.com"
+TARGET_CONNECTION = "anon-db"
+SHARED_SECRET = "very-long-and-hard!"
