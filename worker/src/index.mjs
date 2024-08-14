@@ -60,6 +60,50 @@ function generateUUID() {
     });
 }
 
+router.post('/oauth/token', async (request, env) => {
+    try {
+        console.log("In /oauth/token");
+
+        // TODO: handle form-post ?
+        // Read the request body once and store it
+        const originalBody = await request.clone().json();
+        console.log(originalBody);
+
+        const {grant_type, realm, username} = originalBody;
+
+        if(grant_type !== "http://auth0.com/oauth/grant-type/password-realm") {
+            return fetch(request, env);
+        }
+
+        if (realm !== env.TARGET_CONNECTION) {
+            return forward(request, env);
+        }
+
+        console.log(`this is an ROPG against: ${env.TARGET_CONNECTION} for username: ${username}`);
+
+        originalBody.password = await signJWT({user_id: username}, env.SHARED_SECRET, '180s');
+
+        const body = JSON.stringify(originalBody);
+
+        // Proxy the request to Auth0
+        const url = new URL(request.url);
+        const proxiedRequest = new Request(url, {
+            method: 'POST',
+            headers: {'Content-Type': 'application/json'},
+            body
+        });
+
+        const contentLength = new TextEncoder().encode(body).length;
+        proxiedRequest.headers.set("Content-Length", contentLength);
+
+        return forward(proxiedRequest, env);
+
+    } catch (e) {
+        console.error('Error in custom token:', e);
+        return new Response('Internal Server Error', {status: 500});
+    }
+})
+
 router.post('/dbconnections/signup', async (request, env) => {
     try {
         console.log("In /dbconnections/signup");
